@@ -128,41 +128,41 @@ func init() {
 	}
 }
 
-func generateAttributeAssignment(goName string, typ types.Type, errs *[]error, imports map[string]struct{}, castTypeName string) string {
-	output := ""
-
+func hasMethod(typ types.Type, name string) bool {
 	methodSet := types.NewMethodSet(typ)
 	for i := 0; i < methodSet.Len(); i++ {
 		if method := methodSet.At(i); method.Kind() == types.MethodVal {
-			if method.Obj().(*types.Func).Name() == "UnmarshalText" {
-				output += "if err := v." + goName + ".UnmarshalText([]byte(attr.Value)); err != nil {\n"
-				output += `return fmt.Errorf("malformed attribute value for ` + goName + `: %w", err)`
-				output += "}\n"
-				return output
-			} else if method.Obj().(*types.Func).Name() == "UnmarshalXMLAttr" {
-				output += "if err := v." + goName + ".UnmarshalXMLAttr(attr); err != nil {\n"
-				output += `return fmt.Errorf("malformed attribute value for ` + goName + `: %w", err)`
-				output += "}\n"
-				return output
+			if method.Obj().(*types.Func).Name() == name {
+				return true
 			}
 		}
 	}
+	return false
+}
 
-	methodSet = types.NewMethodSet(types.NewPointer(typ))
-	for i := 0; i < methodSet.Len(); i++ {
-		if method := methodSet.At(i); method.Kind() == types.MethodVal {
-			if method.Obj().(*types.Func).Name() == "UnmarshalText" {
-				output += "if err := v." + goName + ".UnmarshalText([]byte(attr.Value)); err != nil {\n"
-				output += `return fmt.Errorf("malformed attribute value for ` + goName + `: %w", err)`
-				output += "}\n"
-				return output
-			} else if method.Obj().(*types.Func).Name() == "UnmarshalXMLAttr" {
-				output += "if err := (&v." + goName + ").UnmarshalXMLAttr(attr); err != nil {\n"
-				output += `return fmt.Errorf("malformed attribute value for ` + goName + `: %w", err)`
-				output += "}\n"
-				return output
-			}
-		}
+func generateAttributeAssignment(goName string, typ types.Type, errs *[]error, imports map[string]struct{}, castTypeName string) string {
+	output := ""
+
+	if hasMethod(typ, "UnmarshalXMLAttr") {
+		output += "if err := v." + goName + ".UnmarshalXMLAttr(attr); err != nil {\n"
+		output += `return fmt.Errorf("malformed attribute value for ` + goName + `: %w", err)`
+		output += "}\n"
+		return output
+	} else if hasMethod(types.NewPointer(typ), "UnmarshalXMLAttr") {
+		output += "if err := (&v." + goName + ").UnmarshalXMLAttr(attr); err != nil {\n"
+		output += `return fmt.Errorf("malformed attribute value for ` + goName + `: %w", err)`
+		output += "}\n"
+		return output
+	} else if hasMethod(typ, "UnmarshalText") {
+		output += "if err := v." + goName + ".UnmarshalText([]byte(attr.Value)); err != nil {\n"
+		output += `return fmt.Errorf("malformed attribute value for ` + goName + `: %w", err)`
+		output += "}\n"
+		return output
+	} else if hasMethod(types.NewPointer(typ), "UnmarshalText") {
+		output += "if err := v." + goName + ".UnmarshalText([]byte(attr.Value)); err != nil {\n"
+		output += `return fmt.Errorf("malformed attribute value for ` + goName + `: %w", err)`
+		output += "}\n"
+		return output
 	}
 
 	assignment := func(v string) string {
