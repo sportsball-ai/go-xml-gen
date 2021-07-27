@@ -167,9 +167,9 @@ func generateAttributeAssignment(goName string, typ types.Type, errs *[]error, i
 
 	assignment := func(v string) string {
 		if castTypeName != "" {
-			return "v." + goName + " = " + castTypeName + "(" + v + ")\n"
+			return "v." + goName + " = " + castTypeName + "(" + v + ")"
 		} else {
-			return "v." + goName + " = " + v + "\n"
+			return "v." + goName + " = " + v
 		}
 	}
 
@@ -199,7 +199,7 @@ func generateAttributeAssignment(goName string, typ types.Type, errs *[]error, i
 }
 `
 		case types.String:
-			output += assignment("attr.Value")
+			output += assignment("attr.Value") + "\n"
 		case types.Int:
 			imports["fmt"] = struct{}{}
 			imports["strconv"] = struct{}{}
